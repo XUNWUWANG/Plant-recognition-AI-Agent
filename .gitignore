@@ -1,0 +1,20 @@
+# === 密钥(绝不提交)===
+.env
+
+# === 虚拟环境与缓存 ===
+.venv/
+__pycache__/
+*.pyc
+
+# === 大数据集(体积大,可用 download_images.py 重新采集)===
+data/
+test_set/
+
+# === 训练中间产物(仅保留最终 best.pt)===
+models/full.pt
+models/reg.pt
+models/frozen.pt
+
+# === 临时文件 ===
+*.log
+*.zip

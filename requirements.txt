@@ -1,0 +1,12 @@
+openai
+gradio
+torch
+torchvision
+pillow
+numpy
+matplotlib
+icrawler
+
+# 以下仅用于生成报告文档,运行智能体不需要
+# python-docx
+# pywin32
