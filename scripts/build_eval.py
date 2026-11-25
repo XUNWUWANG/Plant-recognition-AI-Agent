@@ -60,8 +60,111 @@ def validate(cases):
     return len(cases)
 
 
+# ---------- 盲症状扩展集校验(CR-011 阶段 A) ----------
+
+BLIND_EXPECTED = {"symptom": 40, "multi": 20, "unanswerable": 30}
+
+
+def _load_jsonl(path):
+    with open(path, encoding="utf-8") as f:
+        return [json.loads(line) for line in f if line.strip()]
+
+
+def _grams(text, n=9):
+    return {text[i:i + n] for i in range(0, len(text) - n + 1)}
+
+
+def blind_check(path=None):
+    """校验盲题:无名称泄漏、相关 id 存在、连续重合 ≤8 字、唯一性。"""
+    path = path or os.path.join(st.EVAL_DIR, "blind_queries.jsonl")
+    cases = _load_jsonl(path)
+    chunks = rag.get_chunks()
+    by_id = {c["id"]: c for c in chunks}
+
+    names = set()
+    for c in chunks:
+        names.add(c["plant"].strip().lower())
+        for a in c.get("aliases", []):
+            names.add(a.strip().lower())
+    names = {n for n in names if len(n) >= 2}
+    grams = set()
+    for c in chunks:
+        grams |= _grams(c["text"])
+
+    errors, stats, seen = [], {}, set()
+    for case in cases:
+        cid = case.get("id", "?")
+        q = (case.get("query") or "").strip()
+        typ = case.get("type")
+        stats[typ] = stats.get(typ, 0) + 1
+
+        if cid in seen:
+            errors.append(f"{cid}: id 重复")
+        seen.add(cid)
+        if case.get("plant_hint") is not None:
+            errors.append(f"{cid}: plant_hint 必须为 null")
+        if not q:
+            errors.append(f"{cid}: query 为空")
+
+        ql = q.lower()
+        for name in sorted(names):
+            if name in ql:
+                errors.append(f"{cid}: query 含植物名/别名/学名「{name}」")
+
+        rel = case.get("relevant", [])
+        for rid in rel:
+            if rid not in by_id:
+                errors.append(f"{cid}: relevant 不存在 {rid}")
+
+        tp = case.get("target_plant")
+        if typ == "unanswerable":
+            if rel:
+                errors.append(f"{cid}: unanswerable 的 relevant 必须为空")
+            if tp is not None:
+                errors.append(f"{cid}: unanswerable 的 target_plant 必须为 null")
+        else:
+            if typ not in ("symptom", "multi"):
+                errors.append(f"{cid}: 未知 type {typ}")
+            if not tp:
+                errors.append(f"{cid}: 缺少 target_plant")
+            if not (1 <= len(rel) <= 2):
+                errors.append(f"{cid}: relevant 需 1-2 条")
+            plants = {by_id[r]["plant"] for r in rel if r in by_id}
+            if plants != {tp}:
+                errors.append(
+                    f"{cid}: relevant 植物 {sorted(plants)} 与 target_plant {tp} 不一致")
+
+        for g in _grams(q):
+            if g in grams:
+                errors.append(f"{cid}: 与知识库连续重合超过 8 字「{g}」")
+                break
+
+    for typ, want in BLIND_EXPECTED.items():
+        got = stats.get(typ, 0)
+        if got != want:
+            errors.append(f"类型 {typ} 数量 {got} != {want}")
+    total = sum(stats.values())
+    if total != sum(BLIND_EXPECTED.values()):
+        errors.append(f"总数 {total} != {sum(BLIND_EXPECTED.values())}")
+
+    print(f"盲题文件:{path}")
+    print(f"总数:{total}(" + " / ".join(
+        f"{k} {stats.get(k, 0)}" for k in BLIND_EXPECTED) + ")")
+    if errors:
+        print(f"校验失败:{len(errors)} 处")
+        for e in errors:
+            print(f"  - {e}")
+        raise SystemExit(1)
+    print("校验通过:无名称泄漏;related 均存在;连续重合 ≤8 字;"
+          "target_plant 与 relevant 一致")
+    return True
+
+
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
+    if "--blind-check" in sys.argv:
+        blind_check()
+        raise SystemExit(0)
     cases = build()
     n = validate(cases)
     path = os.path.join(st.EVAL_DIR, "eval_candidates.jsonl")
