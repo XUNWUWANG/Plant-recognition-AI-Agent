@@ -1,6 +1,6 @@
-# 植物识别 AI Agent —— 代码说明
+# 植物识别与养护问答系统 —— 代码说明
 
-基于 DeepSeek 多模态大模型 + 本地 MobileNet 的植物识别智能体:上传植物照片,输出植物名称(含置信度与 Top-3 候选)与养护建议;若为花卉,附带花语。
+基于 DeepSeek 多模态大模型 + 本地 MobileNet 的植物识别与养护问答系统:上传照片可识别植物,也可以直接输入养护问题;系统用 BM25 + 稠密向量检索本地知识库并生成建议,若为花卉附花语。
 
 ## 界面预览
 
@@ -25,7 +25,7 @@ code/
 │   ├── rag.py          检索入口(分块、路由、回退)
 │   ├── retrievers.py   BM25 / 稠密向量(Qwen3-Embedding)/ RRF 融合
 │   ├── router.py       查询特征路由 + 检索质量回退(CRAG-lite)
-│   └── eval.py         5 组检索对照评测(零 API)
+│   └── eval.py         五组基线检索评测(公平消融见 CR-010)
 ├── train.py            本地模型训练(支持 --mode full|reg|frozen)
 ├── compare.py          双路线对比评测(输出 指标/对比表.md)
 ├── download_images.py  数据集采集脚本(按关键词批量下载并清洗图片)
@@ -85,7 +85,7 @@ python train.py --mode reg        # 全参数 + 强增强 + 权重衰减
 # 双路线对比评测(生成 指标/对比表.md)
 python compare.py
 
-# 检索评测(5 组对照,无需 API Key;需在项目根目录运行)
+# 检索评测(五组基线,无需 API Key;公平消融与盲测见 CR-010/011;需在项目根目录运行)
 python -m retrieval.eval
 python -m retrieval.eval --configs bm25,dense   # 只跑指定组
 python -m retrieval.eval --limit 50             # 仅用前 N 条
@@ -108,8 +108,9 @@ set HF_ENDPOINT=https://hf-mirror.com
 ```
 
 - **离线路线**:选择“本地模型识别”时,识别与建议全程本地,不消耗 API 额度。
-- **评测产物**:`指标/retrieval/检索对比表.md`、`指标/retrieval/检索错误案例.md`、`指标/retrieval/eval.db`。
-- **实测(120 题)Recall@5**:naive 0.682 / BM25 0.691 / Dense 0.518 / Hybrid 0.691 / Adaptive 0.927。
+- **评测产物**:`指标/retrieval/检索对比表.md`、`指标/retrieval/检索错误案例.md`、`指标/retrieval/eval.db`;盲症状、agentic、敏感性、延迟等表按 CR-010~014 规划产出。
+- **实测(120 题)**:P1 最强基线 `dense+filter` 的 Top-1/Recall@5/MRR = 0.700/0.950/0.836;P2 五组与消融对照见 `指标/retrieval/检索对比表.md`。
+- **公平对照提醒**:Adaptive 的增益主要来自“识别到植物后只在该植物范围内检索”;P1 同等实体过滤下 **dense+filter 的 Recall@5 为 0.950(最强),中位延迟约 372ms,也低于 hybrid(约 400ms)与 adaptive(约 382ms)**,当前未显示路由的质量或延迟优势。公平评测、盲症状扩展集与预注册规则见 `docs/dev/changes/CR-010`、`CR-011`、`CR-014`。
 
 ## 六、数据集说明
 
