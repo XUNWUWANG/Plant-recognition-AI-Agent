@@ -1,5 +1,7 @@
 """Agent 编排:识别(选路线)→ 知识检索 → 生成建议,拼装成 Markdown 展示。"""
 
+import time
+
 import tools
 
 # 常见花卉的花语(子串匹配;非花卉植物不会命中,则不输出花语)
@@ -82,6 +84,7 @@ def agent_handle(img_path=None, route="api", question=None):
     if not img_path and not q:
         return "请上传植物照片,或输入一个问题。"
 
+    t0 = time.perf_counter()
     r1 = _identify(img_path, route) if img_path else None
     name = r1["name"] if r1 else None
 
@@ -105,12 +108,16 @@ def agent_handle(img_path=None, route="api", question=None):
         adv = tools.plant_advice(name, q)
     md.append("\n### 养护建议")
     if adv["source"] == "generic":
-        md.append("> 知识库暂无此植物的详细资料,以下为通用建议,仅供参考。")
+        md.append("> 知识库暂无该植物的详细资料,以下为通用建议,仅供参考。")
     md.append(_render_advice(adv))
 
     fl = _flower_lang(name) if name else None
     if fl:
         md.append("\n### 花语")
         md.append(fl)
+
+    elapsed = time.perf_counter() - t0
+    route_label = r1["source"] if r1 else ("本地检索" if q else "知识库")
+    md.append(f"\n> 本次用时 {elapsed:.1f} 秒,路线:{route_label}。")
 
     return "\n".join(md)

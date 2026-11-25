@@ -9,12 +9,10 @@
 import glob
 import json
 import os
-import time
 
 import gradio as gr
 
 import agent
-import tools
 
 _ROUTE = {"大模型识别": "api", "本地模型识别": "local"}
 
@@ -58,45 +56,11 @@ def example_images():
     return [(lab, os.path.abspath(p)) for lab, p in ex if os.path.exists(p)]
 
 
-def build_result(r1, adv, elapsed, question=None):
-    md = []
-    if r1:
-        md += [f"## 识别结果: {r1['name']}({r1['source']})",
-               f"置信度: {agent._conf_color(r1['confidence'])}"]
-        if r1["alternatives"]:
-            md.append("备选: " + "、".join(r1["alternatives"]))
-        if r1["confidence"] < 0.4:
-            md.append("> 识别置信度较低,建议人工确认。")
-    else:
-        md.append("## 养护问答")
-    if question:
-        md.append(f"**问题:** {question}")
-    md.append("\n### 养护建议")
-    if adv["source"] == "generic":
-        md.append("> 知识库暂无该植物的详细资料,以下为通用建议,仅供参考。")
-    md.append(agent._render_advice(adv))
-    fl = agent._flower_lang(r1["name"]) if r1 else None
-    if fl:
-        md.append("\n### 花语")
-        md.append(fl)
-    md.append(f"\n> 本次用时 {elapsed:.1f} 秒,路线:"
-              f"{r1['source'] if r1 else ('本地检索' if question else '知识库')}。")
-    return "\n".join(md)
-
-
 def run(img, route_label, question):
-    q = (question or "").strip()
-    if not img and not q:
-        return "请上传植物照片,或输入一个问题。"
+    """界面回调:参数归一 → agent 编排 → 异常转错误文案。"""
     route = _ROUTE.get(route_label, "api")
-    t0 = time.perf_counter()
     try:
-        r1 = agent._identify(img, route) if img else None
-        name = r1["name"] if r1 else None
-        adv = tools.plant_advice_offline(name, q) if route == "local" \
-            else tools.plant_advice(name, q)
-        elapsed = time.perf_counter() - t0
-        return build_result(r1, adv, elapsed, q)
+        return agent.agent_handle(img, route, question)
     except Exception as e:  # noqa: BLE001
         return f"出错了: {e}"
 
