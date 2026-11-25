@@ -160,10 +160,72 @@ def blind_check(path=None):
     return True
 
 
+def blind_audit(path=None):
+    """区分性词元审计:query 是否含只属于 target_plant 的词元/短语。
+
+    无 API,仅用知识库文本与 jieba 分词;有疑似项则列出并退出非零。
+    """
+    from retrieval import retrievers
+
+    path = path or os.path.join(st.EVAL_DIR, "blind_queries.jsonl")
+    cases = _load_jsonl(path)
+    chunks = rag.get_chunks()
+    plant_tokens, plant_text = {}, {}
+    for c in chunks:
+        toks = set(retrievers.tokenize(
+            c["plant"] + " " + c["section"] + " " + c["text"]))
+        plant_tokens.setdefault(c["plant"], set()).update(toks)
+        plant_text.setdefault(c["plant"], []).append(c["text"])
+    plants = list(plant_tokens)
+
+    suspicious = []
+    checked = 0
+    for case in cases:
+        if case.get("type") == "unanswerable":
+            continue
+        checked += 1
+        tp, q = case.get("target_plant"), case.get("query") or ""
+        other = set()
+        for p in plants:
+            if p != tp:
+                other |= plant_tokens[p]
+        q_tokens = retrievers.tokenize(q)
+        tok_hit = [t for t in q_tokens
+                   if t in plant_tokens.get(tp, set()) and t not in other]
+
+        other_text = "\n".join("\n".join(plant_text[p]) for p in plants if p != tp)
+        tgt_text = "\n".join(plant_text.get(tp, []))
+        phrases = []
+        for n in (4, 3, 2):
+            for i in range(len(q) - n + 1):
+                s = q[i:i + n]
+                if s.strip() and s in tgt_text and s not in other_text \
+                        and s not in phrases:
+                    phrases.append(s)
+
+        if not tok_hit and not phrases:
+            suspicious.append({
+                "id": case.get("id"), "target_plant": tp, "query": q,
+                "tokens": q_tokens,
+            })
+
+    print(f"区分性词元审计:可答题 {checked} 条,疑似 {len(suspicious)} 条")
+    if suspicious:
+        for s in suspicious:
+            print(f"  - {s['id']} [{s['target_plant']}] {s['query']}")
+            print(f"    tokens={s['tokens']}")
+        raise SystemExit(1)
+    print("审计通过:每条均可找到只属于目标植物的词元/短语")
+    return True
+
+
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
     if "--blind-check" in sys.argv:
         blind_check()
+        raise SystemExit(0)
+    if "--blind-audit" in sys.argv:
+        blind_audit()
         raise SystemExit(0)
     cases = build()
     n = validate(cases)

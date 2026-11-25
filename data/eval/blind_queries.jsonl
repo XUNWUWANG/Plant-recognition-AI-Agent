@@ -1,7 +1,7 @@
 {"id":"b001","query":"长着心形叶子的藤蔓垂下来，茎节冒出气生根，最近叶子发黄","type":"symptom","plant_hint":null,"relevant":["绿萝#常见问题","绿萝#浇水"],"target_plant":"绿萝","difficulty":"medium","note":"形态线索:藤蔓/心形叶/气生根"}
 {"id":"b002","query":"水培的藤蔓心形叶，瓶里的根发黑发臭，叶子也蔫了","type":"symptom","plant_hint":null,"relevant":["绿萝#常见问题","绿萝#浇水"],"target_plant":"绿萝","difficulty":"medium","note":"水培烂根"}
 {"id":"b003","query":"叶片肥厚像小胖球，夏天一到就发软发皱","type":"symptom","plant_hint":null,"relevant":["多肉#常见问题","多肉#浇水"],"target_plant":"多肉","difficulty":"medium","note":"肥厚叶/夏季休眠"}
-{"id":"b004","query":"叶片肥厚的多浆植物，放在阴暗处后越长越细长","type":"symptom","plant_hint":null,"relevant":["多肉#常见问题","多肉#光照"],"target_plant":"多肉","difficulty":"medium","note":"徒长"}
+{"id":"b004","query":"叶片肥厚的多浆植物，缺光后开始徒长","type":"symptom","plant_hint":null,"relevant":["多肉#常见问题","多肉#光照"],"target_plant":"多肉","difficulty":"medium","note":"徒长"}
 {"id":"b005","query":"满身是刺的球体，最近摸起来发软","type":"symptom","plant_hint":null,"relevant":["仙人掌#常见问题","仙人掌#浇水"],"target_plant":"仙人掌","difficulty":"medium","note":"球体发软"}
 {"id":"b006","query":"满身刺的球体，光线不足后越长越瘦","type":"symptom","plant_hint":null,"relevant":["仙人掌#光照","仙人掌#常见问题"],"target_plant":"仙人掌","difficulty":"medium","note":"缺光变瘦"}
 {"id":"b007","query":"细长叶片垂成绿色瀑布，叶尖干枯","type":"symptom","plant_hint":null,"relevant":["吊兰#常见问题","吊兰#光照"],"target_plant":"吊兰","difficulty":"medium","note":"叶尖干枯"}
@@ -29,7 +29,7 @@
 {"id":"b029","query":"叶片油亮，叶脉发黄","type":"symptom","plant_hint":null,"relevant":["栀子花#常见问题","栀子花#施肥"],"target_plant":"栀子花","difficulty":"medium","note":"喜酸/黄化"}
 {"id":"b030","query":"白花很香却不开花，土壤偏碱","type":"symptom","plant_hint":null,"relevant":["栀子花#常见问题","栀子花#光照"],"target_plant":"栀子花","difficulty":"medium","note":"偏碱/不开花"}
 {"id":"b031","query":"厚实常绿的叶片，冬天花蕾掉落","type":"symptom","plant_hint":null,"relevant":["山茶花#常见问题","山茶花#浇水"],"target_plant":"山茶花","difficulty":"medium","note":"花蕾掉落"}
-{"id":"b032","query":"冬天到春天开花的大花，叶片发黄","type":"symptom","plant_hint":null,"relevant":["山茶花#常见问题","山茶花#施肥"],"target_plant":"山茶花","difficulty":"medium","note":"叶黄"}
+{"id":"b032","query":"冬春开花的大花，叶片发黄","type":"symptom","plant_hint":null,"relevant":["山茶花#常见问题","山茶花#施肥"],"target_plant":"山茶花","difficulty":"medium","note":"叶黄"}
 {"id":"b033","query":"秋天开花，脚部叶片发黄脱落","type":"symptom","plant_hint":null,"relevant":["菊花#常见问题","菊花#浇水"],"target_plant":"菊花","difficulty":"medium","note":"脚叶黄落"}
 {"id":"b034","query":"秋天开花，花芽期施氮肥太多，反而不开花","type":"symptom","plant_hint":null,"relevant":["菊花#常见问题","菊花#施肥"],"target_plant":"菊花","difficulty":"medium","note":"氮肥过多"}
 {"id":"b035","query":"秋天满院飘香的小花，却不开花","type":"symptom","plant_hint":null,"relevant":["桂花#常见问题","桂花#光照"],"target_plant":"桂花","difficulty":"medium","note":"秋季浓香/不开花"}
@@ -39,7 +39,7 @@
 {"id":"b039","query":"肥厚带刺的叶片，最近发软","type":"symptom","plant_hint":null,"relevant":["芦荟#常见问题","芦荟#浇水"],"target_plant":"芦荟","difficulty":"medium","note":"叶软"}
 {"id":"b040","query":"肥厚带刺的叶片，越长越细长","type":"symptom","plant_hint":null,"relevant":["芦荟#常见问题","芦荟#光照"],"target_plant":"芦荟","difficulty":"medium","note":"变细长"}
 {"id":"b041","query":"心形叶的藤蔓垂下来，叶子发黄，水培瓶里还烂根","type":"multi","plant_hint":null,"relevant":["绿萝#常见问题","绿萝#浇水"],"target_plant":"绿萝","difficulty":"hard","note":"双诉求"}
-{"id":"b042","query":"叶片肥厚像小胖球，发软又越长越细长","type":"multi","plant_hint":null,"relevant":["多肉#常见问题","多肉#光照"],"target_plant":"多肉","difficulty":"hard","note":"双诉求"}
+{"id":"b042","query":"叶片肥厚像小胖球，发软又因缺光徒长","type":"multi","plant_hint":null,"relevant":["多肉#常见问题","多肉#光照"],"target_plant":"多肉","difficulty":"hard","note":"双诉求"}
 {"id":"b043","query":"满身刺的球体发软，光线不足越长越瘦","type":"multi","plant_hint":null,"relevant":["仙人掌#浇水","仙人掌#光照"],"target_plant":"仙人掌","difficulty":"hard","note":"双诉求"}
 {"id":"b044","query":"细长叶片下垂，叶尖干枯又烂根","type":"multi","plant_hint":null,"relevant":["吊兰#常见问题","吊兰#浇水"],"target_plant":"吊兰","difficulty":"hard","note":"双诉求"}
 {"id":"b045","query":"几乎每个月都开花的带刺花木，叶有黑斑又不开花","type":"multi","plant_hint":null,"relevant":["月季#病虫害","月季#常见问题"],"target_plant":"月季","difficulty":"hard","note":"双诉求"}
