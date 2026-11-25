@@ -6,7 +6,10 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from advice.service import plant_advice_offline  # noqa: E402
 from retrieval import rag  # noqa: E402
+from vision.api import classify_plant  # noqa: E402
+from vision.local import classify_local  # noqa: E402
 import tools  # noqa: E402
 
 
@@ -18,14 +21,19 @@ class TestCompat(unittest.TestCase):
         self.assertIn("绿萝", res[0])
 
     def test_offline_advice(self):
-        adv = tools.plant_advice_offline("绿萝")
+        adv = plant_advice_offline("绿萝")
         self.assertIn("source", adv)
         self.assertEqual(adv["source"], "kb")
         self.assertTrue(adv["content"].strip())
 
     def test_offline_advice_with_question(self):
-        adv = tools.plant_advice_offline("绿萝", "叶子发黄怎么办")
+        adv = plant_advice_offline("绿萝", "叶子发黄怎么办")
         self.assertEqual(adv["source"], "kb")
+
+    def test_tools_forwarding_shell(self):
+        self.assertIs(tools.classify_plant, classify_plant)
+        self.assertIs(tools.classify_local, classify_local)
+        self.assertIs(tools.plant_advice_offline, plant_advice_offline)
 
     def test_naive_retrieve(self):
         self.assertTrue(rag.naive_retrieve("绿萝"))

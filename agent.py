@@ -2,7 +2,9 @@
 
 import time
 
-import tools
+from advice.service import plant_advice, plant_advice_offline
+from vision.api import classify_plant
+from vision.local import classify_local
 
 # 常见花卉的花语(子串匹配;非花卉植物不会命中,则不输出花语)
 FLOWER_LANG = {
@@ -58,7 +60,7 @@ def _render_advice(adv):
 def _identify(img_path, route):
     """按路线识别,统一返回 {name, confidence, alternatives}。"""
     if route == "local":
-        r = tools.classify_local(img_path)
+        r = classify_local(img_path)
         top3 = r["top3"]
         return {
             "name": r["class"],
@@ -66,7 +68,7 @@ def _identify(img_path, route):
             "alternatives": [c for c, _ in top3[1:]],
             "source": "本地模型",
         }
-    r = tools.classify_plant(img_path)
+    r = classify_plant(img_path)
     return {
         "name": r["plant_name"],
         "confidence": r["confidence"],
@@ -103,9 +105,9 @@ def agent_handle(img_path=None, route="api", question=None):
 
     # 本地路线:识别与建议均离线(零 API 额度);大模型路线:建议由大模型生成
     if route == "local":
-        adv = tools.plant_advice_offline(name, q)
+        adv = plant_advice_offline(name, q)
     else:
-        adv = tools.plant_advice(name, q)
+        adv = plant_advice(name, q)
     md.append("\n### 养护建议")
     if adv["source"] == "generic":
         md.append("> 知识库暂无该植物的详细资料,以下为通用建议,仅供参考。")

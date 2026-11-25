@@ -54,4 +54,7 @@ from advice.service import plant_advice, plant_advice_offline
 
 ## 6. 执行记录
 
-- 待实施
+- 日期:2026-11-25
+- 结果:新增 `llm.py`、`vision/api.py`、`vision/local.py`、`advice/service.py`;`tools.py` 变为纯转发壳;`agent.py` 直接依赖新模块;`compare.py` 保持原 import。
+- 验收:`tools.py` 无函数定义;`import tools` 仅剩 `compare.py` 与兼容测试;`from tools import ...` 四函数成功;五条路径输出与改造前一致;16 测试绿;五组指标不变。
+- 决策点:按方案 A 保留转发壳,未修改 `compare.py`。
