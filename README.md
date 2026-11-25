@@ -10,18 +10,23 @@
 
 ```
 code/
-├── config.py           配置(API Key、模型名、路径)
-├── tools.py            工具层:大模型识别 / 本地识别 / 知识生成
-├── rag.py              本地知识库检索(检索增强生成,RAG)
+├── config.py           配置(API Key、模型名、路径、检索参数)
+├── tools.py            工具层:大模型识别 / 本地识别 / 知识库建议
+├── rag.py              知识库检索入口(分块、路由、回退)
+├── retrievers.py       检索器:BM25 / 稠密向量(Qwen3-Embedding)/ RRF 融合
+├── router.py           查询特征路由 + 检索质量回退(CRAG-lite)
 ├── agent.py            编排:识别 → 检索 → 生成,拼装输出
-├── app.py              Gradio 网页界面(发布)
+├── app.py              Gradio 网页界面(照片 + 问答框)
+├── eval_retrieval.py   5 组检索对照评测(零 API)
 ├── train.py            本地模型训练(支持 --mode full|reg|frozen)
 ├── compare.py          双路线对比评测(输出 指标/对比表.md)
 ├── download_images.py  数据集采集脚本(按关键词批量下载并清洗图片)
-├── kb/                 植物养护知识库(文本)
-├── models/             训练好的模型与类别表、训练历史
-├── 指标/               对比评测结果
-└── test_set/           测试图片(未随仓库提供,可用脚本采集)
+├── scripts/build_eval.py  评测题候选生成(需人工改写)
+├── tests/              单元测试(chunk 解析、RRF、路由、兼容性)
+├── kb/                 植物养护知识库(文本,按植物 + 小节分块)
+├── models/             训练好的模型、类别表、chunks 与向量缓存
+├── data/               训练集 / 评测集(eval_queries.jsonl)
+└── 指标/               对比评测结果、检索对比表、eval.db
 ```
 
 ## 二、环境与依赖
@@ -56,6 +61,13 @@ DEEPSEEK_API_KEY=sk-你的key
 # 启动网页界面(浏览器打开 http://127.0.0.1:7860)
 python app.py
 
+# 已下载过嵌入模型后,推荐用离线模式启动,避免每次联网校验卡顿
+# Windows:
+scripts\run_app.cmd
+# 或手动设置环境变量后启动:
+#   set HF_HUB_OFFLINE=1  (Linux/macOS: export HF_HUB_OFFLINE=1)
+#   python app.py
+
 # 训练本地模型(三种策略)
 python train.py --mode frozen     # 冻结骨干 + 早停(最终采用)
 python train.py --mode full       # 全参数微调
@@ -63,7 +75,32 @@ python train.py --mode reg        # 全参数 + 强增强 + 权重衰减
 
 # 双路线对比评测(生成 指标/对比表.md)
 python compare.py
+
+# 检索评测(5 组对照,无需 API Key)
+python eval_retrieval.py
+python eval_retrieval.py --configs bm25,dense   # 只跑指定组
+python eval_retrieval.py --limit 50             # 仅用前 N 条
+
+# 查看知识库分块统计
+python -m rag --stats
+
+# 单元测试
+python -m unittest discover -s tests
 ```
+
+## 五、检索子系统
+
+- **入口**:界面上传照片、输入问题,或两者同时使用;也可纯文字提问。
+- **路由**:根据查询是否含植物名/别名/症状词,选择 BM25、稠密向量或 RRF 混合检索;检索质量不足时自动回退到混合检索(CRAG-lite)。
+- **向量模型**:默认 `Qwen/Qwen3-Embedding-0.6B`,加载失败自动改试 `BAAI/bge-small-zh-v1.5`。首次运行会下载模型;国内网络可先设置镜像:
+
+```bash
+set HF_ENDPOINT=https://hf-mirror.com
+```
+
+- **离线路线**:选择“本地模型识别”时,识别与建议全程本地,不消耗 API 额度。
+- **评测产物**:`指标/检索对比表.md`、`指标/检索错误案例.md`、`指标/eval.db`。
+- **实测(120 题)Recall@5**:naive 0.682 / BM25 0.691 / Dense 0.518 / Hybrid 0.691 / Adaptive 0.927。
 
 ## 五、数据集说明
 

@@ -11,10 +11,12 @@ from PIL import Image
 
 import config as cfg
 
-# 全局共用一个客户端(避免每次调用重复建连接)
-_client = OpenAI(api_key=cfg.DEEPSEEK_API_KEY, base_url=cfg.BASE_URL)
-
 _SYSTEM = "你是植物识别助手,严格按要求的 JSON 格式输出,不要输出其他内容。"
+
+
+def _get_client():
+    """懒加载客户端:无 API Key 时只有在真正调用大模型时才报错。"""
+    return OpenAI(api_key=cfg.require_api_key(), base_url=cfg.BASE_URL)
 
 _IDENTIFY_PROMPT = (
     '识别这张图片中的植物。只输出 JSON,不要输出任何其他内容:'
@@ -51,7 +53,7 @@ def _parse_json(text):
 def classify_plant(img_path, topk=3):
     """大模型识别:返回 {plant_name, confidence, alternatives, raw, ok}。"""
     data_url = _image_to_data_url(img_path)
-    resp = _client.chat.completions.create(
+    resp = _get_client().chat.completions.create(
         model=cfg.MODEL,
         messages=[
             {"role": "system", "content": _SYSTEM},
@@ -84,28 +86,52 @@ _ADVICE_PROMPT = (
     "特征:…\n光照:…\n浇水:…\n温度:…\n施肥:…\n备注:…"
 )
 
+_ADVICE_PROMPT_Q = (
+    "以下是植物知识库中与问题相关的资料:\n{context}\n\n"
+    "用户的问题:{question}\n"
+    "请先基于资料回答该问题,再补充必要的养护建议,按以下格式、每条一行:\n"
+    "特征:…\n光照:…\n浇水:…\n温度:…\n施肥:…\n备注:…"
+)
+
 _GENERIC_ADVICE_PROMPT = (
     "「{plant}」不在我的植物知识库里。请给出通用养护建议,按以下格式、每条一行:\n"
     "特征:…\n光照:…\n浇水:…\n温度:…\n施肥:…\n备注:(说明知识库暂无此植物,建议谨慎参考)"
 )
 
+_GENERIC_ADVICE_PROMPT_Q = (
+    "「{plant}」不在我的植物知识库里。用户的问题:{question}\n"
+    "请针对问题给出通用养护建议,按以下格式、每条一行:\n"
+    "特征:…\n光照:…\n浇水:…\n温度:…\n施肥:…\n备注:(说明知识库暂无此植物,建议谨慎参考)"
+)
 
-def plant_advice(plant_name, topk=2):
-    """知识工具:先检索知识库(RAG),再让模型基于资料生成养护建议。
+
+def plant_advice(plant_name=None, question=None, topk=2):
+    """先检索知识库(RAG),再让大模型基于资料生成养护建议。
 
     返回 {content: 建议文本, source: 'kb' | 'generic'}。
     """
     import rag
 
-    ctx = rag.retrieve(plant_name, topk=topk)
-    if ctx:
-        prompt = _ADVICE_PROMPT.format(plant=plant_name, context="\n".join(ctx))
+    q = (question or "").strip()
+    query = q or (plant_name or "")
+    ctx, hit = rag.retrieve_hit(query, topk=max(topk, cfg.TOP_K),
+                                plant_hint=plant_name)
+    label = plant_name or "未知植物"
+    if hit and ctx:
+        if q:
+            prompt = _ADVICE_PROMPT_Q.format(plant=label, context="\n".join(ctx),
+                                             question=q)
+        else:
+            prompt = _ADVICE_PROMPT.format(plant=label, context="\n".join(ctx))
         source = "kb"
     else:
-        prompt = _GENERIC_ADVICE_PROMPT.format(plant=plant_name)
+        if q:
+            prompt = _GENERIC_ADVICE_PROMPT_Q.format(plant=label, question=q)
+        else:
+            prompt = _GENERIC_ADVICE_PROMPT.format(plant=label)
         source = "generic"
 
-    resp = _client.chat.completions.create(
+    resp = _get_client().chat.completions.create(
         model=cfg.MODEL,
         messages=[
             {"role": "system", "content": _ADVICE_SYSTEM},
@@ -116,19 +142,23 @@ def plant_advice(plant_name, topk=2):
     return {"content": resp.choices[0].message.content, "source": source}
 
 
-def plant_advice_offline(plant_name, topk=1):
+def plant_advice_offline(plant_name=None, question=None, topk=1):
     """完全离线的养护建议:直接取知识库条目原文返回,不调用大模型 API。
 
-    用于“本地模型识别”路线,使该路线真正做到零 API、零额度消耗。
+    用于“本地模型识别/纯问答”路线,使该路线真正做到零 API、零额度消耗。
     知识库未命中时返回一句提示,建议改用大模型路线获取更完善建议。
     """
     import rag
 
-    ctx = rag.retrieve(plant_name, topk=topk)
-    if ctx:
+    q = (question or "").strip()
+    query = q or (plant_name or "")
+    ctx, hit = rag.retrieve_hit(query, topk=max(topk, cfg.TOP_K),
+                                plant_hint=plant_name)
+    if hit and ctx:
         body = ctx[0].split("\n", 1)[1] if "\n" in ctx[0] else ctx[0]
         return {"content": body, "source": "kb"}
-    return {"content": f"知识库暂无「{plant_name}」的详细资料。可切换“大模型识别”获取更完善的建议。",
+    label = plant_name or "这个问题"
+    return {"content": f"知识库暂无「{label}」的详细资料。可切换“大模型识别”获取更完善的建议。",
             "source": "generic"}
 
 

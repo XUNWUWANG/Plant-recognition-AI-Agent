@@ -58,36 +58,45 @@ def example_images():
     return [(lab, os.path.abspath(p)) for lab, p in ex if os.path.exists(p)]
 
 
-def build_result(r1, adv, elapsed):
-    md = [f"## 识别结果: {r1['name']}({r1['source']})",
-          f"置信度: {agent._conf_color(r1['confidence'])}"]
-    if r1["alternatives"]:
-        md.append("备选: " + "、".join(r1["alternatives"]))
-    if r1["confidence"] < 0.4:
-        md.append("> 识别置信度较低,建议人工确认。")
+def build_result(r1, adv, elapsed, question=None):
+    md = []
+    if r1:
+        md += [f"## 识别结果: {r1['name']}({r1['source']})",
+               f"置信度: {agent._conf_color(r1['confidence'])}"]
+        if r1["alternatives"]:
+            md.append("备选: " + "、".join(r1["alternatives"]))
+        if r1["confidence"] < 0.4:
+            md.append("> 识别置信度较低,建议人工确认。")
+    else:
+        md.append("## 养护问答")
+    if question:
+        md.append(f"**问题:** {question}")
     md.append("\n### 养护建议")
     if adv["source"] == "generic":
         md.append("> 知识库暂无该植物的详细资料,以下为通用建议,仅供参考。")
     md.append(agent._render_advice(adv))
-    fl = agent._flower_lang(r1["name"])
+    fl = agent._flower_lang(r1["name"]) if r1 else None
     if fl:
         md.append("\n### 花语")
         md.append(fl)
-    md.append(f"\n> 本次识别用时 {elapsed:.1f} 秒,路线:{r1['source']}。")
+    md.append(f"\n> 本次用时 {elapsed:.1f} 秒,路线:"
+              f"{r1['source'] if r1 else ('本地检索' if question else '知识库')}。")
     return "\n".join(md)
 
 
-def run(img, route_label):
-    if not img:
-        return "请先上传 / 拍摄 / 粘贴一张植物照片。"
+def run(img, route_label, question):
+    q = (question or "").strip()
+    if not img and not q:
+        return "请上传植物照片,或输入一个问题。"
     route = _ROUTE.get(route_label, "api")
     t0 = time.perf_counter()
     try:
-        r1 = agent._identify(img, route)
-        adv = tools.plant_advice_offline(r1["name"]) if route == "local" \
-            else tools.plant_advice(r1["name"])
+        r1 = agent._identify(img, route) if img else None
+        name = r1["name"] if r1 else None
+        adv = tools.plant_advice_offline(name, q) if route == "local" \
+            else tools.plant_advice(name, q)
         elapsed = time.perf_counter() - t0
-        return build_result(r1, adv, elapsed)
+        return build_result(r1, adv, elapsed, q)
     except Exception as e:  # noqa: BLE001
         return f"出错了: {e}"
 
@@ -97,31 +106,39 @@ def build():
     samples = example_images()
     choices = samples if samples else [("(无示例)", "")]
 
-    with gr.Blocks(title="植物识别助手") as demo:
-        gr.Markdown("## 植物识别助手\n上传植物照片,识别名称并给出养护建议;若为花卉,附带花语。",
+    with gr.Blocks(title="植物识别与养护问答助手") as demo:
+        gr.Markdown("## 植物识别与养护问答助手\n"
+                    "上传照片可识别植物;也可以直接输入养护问题。两种方式可单用,也可“照片 + 追问”。",
                     elem_id="hdr")
         with gr.Row():
             with gr.Column(scale=5):
                 img = gr.Image(
                     type="filepath", height=300, label="植物照片(可上传/拍照/粘贴)",
                     sources=["upload", "webcam", "clipboard"], interactive=True)
+                question = gr.Textbox(
+                    label="想问什么?(可不填)", lines=2,
+                    placeholder="例如:叶子发黄怎么办?多久浇一次水?")
+                gr.Examples(
+                    examples=[["绿萝叶子发黄怎么办"], ["黄金葛怎么养"], ["多肉夏天怎么浇水"]],
+                    inputs=[question], label="示例问题")
                 route = gr.Radio(list(_ROUTE), value=list(_ROUTE)[0],
                                  label="识别方式",
                                  info="大模型:联网识别+AI 生成建议,消耗少量 API 额度;"
                                       "本地模型:识别与建议全离线,不耗额度。")
-                btn = gr.Button("开始识别", variant="primary")
+                btn = gr.Button("开始识别 / 提问", variant="primary")
                 sample = gr.Radio(choices=choices, value=None,
                                   label="或从示例中选择一张")
                 clear = gr.Button("清空", size="sm")
             with gr.Column(scale=6):
-                out = gr.Markdown(label="识别结果", elem_id="out-box")
+                out = gr.Markdown(label="结果", elem_id="out-box")
                 copy_btn = gr.Button("复制结果", size="sm", elem_id="copy-btn")
 
         gr.Markdown(f"当前支持识别 {len(cls)} 种:{'、'.join(cls)}", elem_id="muted-note")
 
         sample.select(lambda v: v if v else None, inputs=[sample], outputs=[img])
-        btn.click(run, [img, route], out)
-        clear.click(lambda: (None, ""), outputs=[img, out])
+        btn.click(run, [img, route, question], out)
+        question.submit(run, [img, route, question], out)
+        clear.click(lambda: (None, "", ""), outputs=[img, question, out])
 
         copy_btn.click(None, js="""
         () => {
