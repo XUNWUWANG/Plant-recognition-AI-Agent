@@ -11,12 +11,15 @@
 ```
 code/
 ├── config.py           配置(API Key、模型名、CV 路径)
+├── app.py              启动入口(界面与编排在 plant/)
+├── plant/              产品层
+│   ├── orchestrator.py 编排:识别 → 检索/建议 → Markdown
+│   ├── render.py       花语、置信度与建议渲染
+│   └── ui.py           Gradio 界面与回调
 ├── llm.py              大模型客户端(懒加载)
 ├── vision/             识图:api(大模型)/ local(本地 CV)
 ├── advice/             养护建议:检索 + LLM / 离线原文
 ├── tools.py            兼容转发壳(compare.py 仍从此导入)
-├── agent.py            编排:识别 → 检索 → 生成,拼装输出
-├── app.py              Gradio 网页界面(照片 + 问答框)
 ├── retrieval/          检索子系统
 │   ├── settings.py     检索配置(模型、缓存、知识库、超参)
 │   ├── rag.py          检索入口(分块、路由、回退)
