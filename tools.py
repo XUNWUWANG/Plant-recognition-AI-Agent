@@ -114,8 +114,7 @@ def plant_advice(plant_name=None, question=None, topk=2):
 
     q = (question or "").strip()
     query = q or (plant_name or "")
-    ctx, hit = rag.retrieve_hit(query, topk=max(topk, cfg.TOP_K),
-                                plant_hint=plant_name)
+    ctx, hit = rag.retrieve_hit(query, topk=topk, plant_hint=plant_name)
     label = plant_name or "未知植物"
     if hit and ctx:
         if q:
@@ -152,8 +151,7 @@ def plant_advice_offline(plant_name=None, question=None, topk=1):
 
     q = (question or "").strip()
     query = q or (plant_name or "")
-    ctx, hit = rag.retrieve_hit(query, topk=max(topk, cfg.TOP_K),
-                                plant_hint=plant_name)
+    ctx, hit = rag.retrieve_hit(query, topk=topk, plant_hint=plant_name)
     if hit and ctx:
         body = ctx[0].split("\n", 1)[1] if "\n" in ctx[0] else ctx[0]
         return {"content": body, "source": "kb"}

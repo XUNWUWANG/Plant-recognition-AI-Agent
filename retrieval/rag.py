@@ -1,8 +1,8 @@
 """知识库检索:分块 → 三路检索(BM25/向量/RRF)→ 路由与回退,返回相关片段。
 
 CLI:
-    python -m rag --stats    打印 chunk 数量、每植物小节数
-    python -m rag --rebuild  强制重建 chunks 缓存
+    python -m retrieval.rag --stats    打印 chunk 数量、每植物小节数
+    python -m retrieval.rag --rebuild  强制重建 chunks 缓存
 """
 
 import hashlib
@@ -12,7 +12,7 @@ import re
 import sys
 import time
 
-import config as cfg
+from . import settings as st
 
 _chunks = None
 _chunk_by_id = {}
@@ -31,10 +31,10 @@ _PUNCT_TRIM = "。.;； \t\r\n"
 def _kb_hash():
     """知识库源文件内容哈希,用于判断 chunks 缓存是否过期。"""
     h = hashlib.sha1()
-    for fn in sorted(os.listdir(cfg.KB_DIR)):
+    for fn in sorted(os.listdir(st.KB_DIR)):
         if not fn.endswith(".txt"):
             continue
-        with open(os.path.join(cfg.KB_DIR, fn), encoding="utf-8") as f:
+        with open(os.path.join(st.KB_DIR, fn), encoding="utf-8") as f:
             h.update(fn.encode("utf-8"))
             h.update(b"\0")
             h.update(f.read().encode("utf-8"))
@@ -63,10 +63,10 @@ def _parse_aliases(section, text):
 def _parse_kb():
     """按 ## 植物 / ### 小节切块;同名植物保留第一条。"""
     chunks, seen_plants, seen_ids = [], set(), set()
-    for fn in sorted(os.listdir(cfg.KB_DIR)):
+    for fn in sorted(os.listdir(st.KB_DIR)):
         if not fn.endswith(".txt"):
             continue
-        with open(os.path.join(cfg.KB_DIR, fn), encoding="utf-8") as f:
+        with open(os.path.join(st.KB_DIR, fn), encoding="utf-8") as f:
             content = f.read()
         for plant, body in _split(content, r"^##\s+(.+)$"):
             plant = plant.strip()
@@ -80,7 +80,7 @@ def _parse_kb():
                 parts = [("正文", body)]
             for section, text in parts:
                 text = text.strip()
-                if len(text) < cfg.CHUNK_MIN_LEN:
+                if len(text) < st.CHUNK_MIN_LEN:
                     continue
                 section = section.strip() or "正文"
                 cid = f"{plant}#{section}"
@@ -119,9 +119,9 @@ def _load_chunks(force=False):
     if _chunks is not None and not force:
         return
     kb_hash = _kb_hash()
-    if not force and os.path.exists(cfg.CHUNKS_CACHE):
+    if not force and os.path.exists(st.CHUNKS_CACHE):
         try:
-            with open(cfg.CHUNKS_CACHE, encoding="utf-8") as f:
+            with open(st.CHUNKS_CACHE, encoding="utf-8") as f:
                 data = json.load(f)
             if data.get("kb_hash") == kb_hash and data.get("chunks"):
                 _chunks = data["chunks"]
@@ -131,13 +131,13 @@ def _load_chunks(force=False):
             print(f"[rag] chunks 缓存读取失败,重建:{e}")
     _chunks = _parse_kb()
     if not _chunks:
-        raise RuntimeError(f"知识库为空,请检查 {cfg.KB_DIR} 目录")
+        raise RuntimeError(f"知识库为空,请检查 {st.KB_DIR} 目录")
     _chunk_by_id = {c["id"]: c for c in _chunks}
-    os.makedirs(os.path.dirname(cfg.CHUNKS_CACHE), exist_ok=True)
-    with open(cfg.CHUNKS_CACHE, "w", encoding="utf-8") as f:
+    os.makedirs(os.path.dirname(st.CHUNKS_CACHE), exist_ok=True)
+    with open(st.CHUNKS_CACHE, "w", encoding="utf-8") as f:
         json.dump({"kb_hash": kb_hash, "chunks": _chunks}, f,
                   ensure_ascii=False, indent=1)
-    print(f"[rag] 已重建 chunks:{len(_chunks)} 条 → {cfg.CHUNKS_CACHE}")
+    print(f"[rag] 已重建 chunks:{len(_chunks)} 条 → {st.CHUNKS_CACHE}")
 
 
 def _ensure_bm25():
@@ -207,7 +207,7 @@ def _fmt(results):
 def _search(route, q, topk, plant=None):
     """返回 (ranked, top1_cos)。plant 非空时只在该植物范围内排序。"""
     from . import router
-    limit = len(_chunks) if plant else cfg.FUSE_TOP_N
+    limit = len(_chunks) if plant else st.FUSE_TOP_N
 
     if route == router.ROUTE_BM25:
         ranked = _ensure_bm25().search(q, limit)
@@ -232,7 +232,7 @@ def _search(route, q, topk, plant=None):
 
 def retrievers_rrf(bm, de, topk):
     from . import retrievers
-    return retrievers.rrf_fuse([bm, de], cfg.RRF_K, topk)
+    return retrievers.rrf_fuse([bm, de], st.RRF_K, topk)
 
 
 def _top1_text(ranked):
@@ -269,7 +269,7 @@ def _run(query, topk, plant_hint):
 def retrieve(query="", topk=None, plant_hint=None):
     """返回 ['## 植物 · 小节\\n正文', ...],长度 ≤ topk。"""
     _load_chunks()
-    topk = cfg.TOP_K if topk is None else topk
+    topk = max(topk or 0, st.TOP_K)
     if not (query or "").strip() and not plant_hint:
         return []
     _route, _retried, ranked, _cov, _cos, _ms = _run(query, topk, plant_hint)
@@ -283,19 +283,19 @@ def retrieve_hit(query="", topk=None, plant_hint=None):
     供 tools 判断“库外问题”,不改变 retrieve 的原有行为。
     """
     _load_chunks()
-    topk = cfg.TOP_K if topk is None else topk
+    topk = max(topk or 0, st.TOP_K)
     if not (query or "").strip() and not plant_hint:
         return [], False
     _route, _retried, ranked, cov, cos, _ms = _run(query, topk, plant_hint)
-    hit = cov >= cfg.COVERAGE_THRESHOLD or \
-        (cos is not None and cos >= cfg.ANSWER_COS_THRESHOLD)
+    hit = cov >= st.COVERAGE_THRESHOLD or \
+        (cos is not None and cos >= st.ANSWER_COS_THRESHOLD)
     return _fmt(ranked), hit
 
 
 def retrieve_debug(query="", topk=None, plant_hint=None):
     """返回路由/回退/耗时/覆盖度/余弦与结构化结果。"""
     _load_chunks()
-    topk = cfg.TOP_K if topk is None else topk
+    topk = max(topk or 0, st.TOP_K)
     if not (query or "").strip() and not plant_hint:
         return {"route": None, "retried": False, "latency_ms": 0.0,
                 "coverage": 0.0, "top1_cos": None, "results": []}
@@ -325,7 +325,7 @@ def _naive_score(query, plant, text):
 def naive_rank(query, topk=None):
     """第 1 组基线的排序结果:[(chunk_id, score)]。"""
     _load_chunks()
-    topk = cfg.TOP_K if topk is None else topk
+    topk = max(topk or 0, st.TOP_K)
     q = (query or "").strip()
     if not q:
         return []
@@ -355,7 +355,7 @@ def _stats():
 
 
 def _rebuild():
-    for path in (cfg.CHUNKS_CACHE, cfg.EMBED_CACHE):
+    for path in (st.CHUNKS_CACHE, st.EMBED_CACHE):
         if os.path.exists(path):
             os.remove(path)
             print(f"已删除 {path}")

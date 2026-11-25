@@ -2,7 +2,7 @@
 
 import re
 
-import config as cfg
+from . import settings as st
 from .retrievers import tokenize
 
 ROUTE_BM25, ROUTE_DENSE, ROUTE_HYBRID = "bm25", "dense", "hybrid"
@@ -75,11 +75,11 @@ def decide(query, plant_hint, names, primary_names=None):
 def should_retry(route, top1_text, query, top1_cos=None):
     """检索质量回退:BM25 覆盖不足 / Dense 余弦过低 → 改跑 hybrid。"""
     if route == ROUTE_BM25:
-        if coverage(query, top1_text) < cfg.COVERAGE_THRESHOLD:
+        if coverage(query, top1_text) < st.COVERAGE_THRESHOLD:
             return ROUTE_HYBRID
         return None
     if route == ROUTE_DENSE:
-        if top1_cos is not None and top1_cos < cfg.DENSE_COS_THRESHOLD:
+        if top1_cos is not None and top1_cos < st.DENSE_COS_THRESHOLD:
             return ROUTE_HYBRID
         return None
     return None

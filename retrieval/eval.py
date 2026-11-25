@@ -16,15 +16,14 @@ import sys
 import time
 from datetime import datetime
 
-import config as cfg
-
 from . import rag, retrievers
+from . import settings as st
 
 CONFIGS = ["naive", "bm25", "dense", "hybrid", "adaptive"]
 
 
 def load_cases(path=None, limit=None):
-    path = path or os.path.join(cfg.EVAL_DIR, "eval_queries.jsonl")
+    path = path or os.path.join(st.EVAL_DIR, "eval_queries.jsonl")
     cases = []
     with open(path, encoding="utf-8") as f:
         for line in f:
@@ -38,33 +37,33 @@ def _rank(config, query, plant_hint):
     """返回 (ranked_ids, route, retried, coverage, top1_cos, latency_ms)。"""
     if config == "naive":
         t0 = time.perf_counter()
-        ids = [cid for cid, _ in rag.naive_rank(query, cfg.TOP_K)]
+        ids = [cid for cid, _ in rag.naive_rank(query, st.TOP_K)]
         return ids, "naive", False, None, None, (time.perf_counter() - t0) * 1000
 
     if config == "bm25":
         t0 = time.perf_counter()
         ids = [cid for cid, _ in
-               rag._ensure_bm25().search(query, cfg.FUSE_TOP_N)[:cfg.TOP_K]]
+               rag._ensure_bm25().search(query, st.FUSE_TOP_N)[:st.TOP_K]]
         return ids, "bm25", False, None, None, (time.perf_counter() - t0) * 1000
 
     if config == "dense":
         t0 = time.perf_counter()
-        ranked = rag._ensure_dense().search(query, cfg.FUSE_TOP_N)[:cfg.TOP_K]
+        ranked = rag._ensure_dense().search(query, st.FUSE_TOP_N)[:st.TOP_K]
         lat = (time.perf_counter() - t0) * 1000
         return [cid for cid, _ in ranked], "dense", False, None, \
             (ranked[0][1] if ranked else None), lat
 
     if config == "hybrid":
         t0 = time.perf_counter()
-        bm = rag._ensure_bm25().search(query, cfg.FUSE_TOP_N)
-        de = rag._ensure_dense().search(query, cfg.FUSE_TOP_N)
-        fused = retrievers.rrf_fuse([bm, de], cfg.RRF_K, cfg.TOP_K)
+        bm = rag._ensure_bm25().search(query, st.FUSE_TOP_N)
+        de = rag._ensure_dense().search(query, st.FUSE_TOP_N)
+        fused = retrievers.rrf_fuse([bm, de], st.RRF_K, st.TOP_K)
         lat = (time.perf_counter() - t0) * 1000
         return [cid for cid, _ in fused], "hybrid", False, None, \
             (de[0][1] if de else None), lat
 
     # adaptive
-    dbg = rag.retrieve_debug(query, cfg.TOP_K, plant_hint)
+    dbg = rag.retrieve_debug(query, st.TOP_K, plant_hint)
     ids = [r["id"] for r in dbg["results"]]
     return (ids, dbg["route"], dbg["retried"], dbg["coverage"],
             dbg["top1_cos"], dbg["latency_ms"])
@@ -73,7 +72,7 @@ def _rank(config, query, plant_hint):
 def _recall_mrr(ranked, relevant):
     if not relevant:
         return None, None
-    top = ranked[:cfg.TOP_K]
+    top = ranked[:st.TOP_K]
     hit = len(set(top) & set(relevant))
     recall = hit / len(relevant)
     mrr = 0.0
@@ -317,7 +316,7 @@ def main():
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--out", default=os.path.join("指标", "检索对比表.md"))
     ap.add_argument("--err", default=os.path.join("指标", "检索错误案例.md"))
-    ap.add_argument("--db", default=cfg.EVAL_DB)
+    ap.add_argument("--db", default=st.EVAL_DB)
     args = ap.parse_args()
 
     configs = [c.strip() for c in args.configs.split(",") if c.strip()]

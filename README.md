@@ -10,11 +10,12 @@
 
 ```
 code/
-├── config.py           配置(API Key、模型名、路径、检索参数)
+├── config.py           配置(API Key、模型名、CV 路径)
 ├── tools.py            工具层:大模型识别 / 本地识别 / 知识库建议
 ├── agent.py            编排:识别 → 检索 → 生成,拼装输出
 ├── app.py              Gradio 网页界面(照片 + 问答框)
 ├── retrieval/          检索子系统
+│   ├── settings.py     检索配置(模型、缓存、知识库、超参)
 │   ├── rag.py          检索入口(分块、路由、回退)
 │   ├── retrievers.py   BM25 / 稠密向量(Qwen3-Embedding)/ RRF 融合
 │   ├── router.py       查询特征路由 + 检索质量回退(CRAG-lite)

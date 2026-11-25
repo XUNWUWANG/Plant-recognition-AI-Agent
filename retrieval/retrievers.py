@@ -9,7 +9,7 @@ import jieba
 import numpy as np
 from rank_bm25 import BM25Okapi
 
-import config as cfg
+from . import settings as st
 
 QUERY_INSTRUCTION = "给定一个植物养护问题，检索能回答它的知识片段。"
 
@@ -94,8 +94,8 @@ class DenseIndex:
     def __init__(self, chunks, model_name=None, cache_path=None):
         self.chunks = chunks
         self.ids = [c["id"] for c in chunks]
-        self.model_name = model_name or cfg.EMBED_MODEL
-        self.cache_path = cache_path or cfg.EMBED_CACHE
+        self.model_name = model_name or st.EMBED_MODEL
+        self.cache_path = cache_path or st.EMBED_CACHE
         self.kb_hash = _chunks_hash(chunks)
         self._model = None
         self._backend = None
@@ -109,8 +109,8 @@ class DenseIndex:
         if self._model is not None:
             return self._model
         candidate_models = [self.model_name]
-        if not self._from_cache and self.model_name != cfg.EMBED_FALLBACK:
-            candidate_models.append(cfg.EMBED_FALLBACK)
+        if not self._from_cache and self.model_name != st.EMBED_FALLBACK:
+            candidate_models.append(st.EMBED_FALLBACK)
 
         st_cls = None
         try:
@@ -250,7 +250,7 @@ class DenseIndex:
 
 def rrf_fuse(ranked_lists, k=None, topk=5):
     """score = Σ 1/(k + rank),rank 从 1 开始;同分按 chunk_id 稳定排序。"""
-    k = cfg.RRF_K if k is None else k
+    k = st.RRF_K if k is None else k
     acc = {}
     for ranked in ranked_lists:
         for rank, (cid, _score) in enumerate(ranked, start=1):

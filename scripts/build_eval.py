@@ -12,8 +12,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import config as cfg  # noqa: E402
-from retrieval import rag  # noqa: E402
+from retrieval import rag, settings as st  # noqa: E402
 
 TEMPLATES = {
     "光照": ("{plant}需要多少光照？", "entity"),
@@ -65,8 +64,8 @@ if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
     cases = build()
     n = validate(cases)
-    path = os.path.join(cfg.EVAL_DIR, "eval_candidates.jsonl")
-    os.makedirs(cfg.EVAL_DIR, exist_ok=True)
+    path = os.path.join(st.EVAL_DIR, "eval_candidates.jsonl")
+    os.makedirs(st.EVAL_DIR, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         for c in cases:
             f.write(json.dumps(c, ensure_ascii=False) + "\n")
