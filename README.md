@@ -110,6 +110,7 @@ set HF_ENDPOINT=https://hf-mirror.com
 - **离线路线**:选择“本地模型识别”时,识别与建议全程本地,不消耗 API 额度。
 - **评测产物**:`指标/retrieval/检索对比表.md`、`指标/retrieval/检索错误案例.md`、`指标/retrieval/eval.db`;盲症状、agentic、敏感性、延迟等表按 CR-010~014 规划产出。
 - **实测(120 题,P1 主表)**:`dense+filter` 的 Top-1/Recall@5/MRR = 0.700/0.950/0.836;指标附 Wilson/bootstrap 区间,延迟按 bfloat16 / 4 线程 / 重复 3 次固定口径。主表、错误分析、敏感性、延迟、库外问题与盲题结果见 `指标/retrieval/`。
+- **盲题结果(CR-011/014)**:60 条无植物名可答题上,最佳无过滤基线 `hybrid` Recall@5 0.558,`adaptive` 0.533(差 −0.025,判为等价);`dense` 路由首次触发 44 次;保留规则 5,不改产品路由。
 - **公平对照提醒**:Adaptive 的增益主要来自“识别到植物后只在该植物范围内检索”;P1 同等实体过滤下 **dense+filter 的 Recall@5 为 0.950(最强),中位延迟约 372ms,也低于 hybrid(约 400ms)与 adaptive(约 382ms)**,当前未显示路由的质量或延迟优势。公平评测、盲症状扩展集与预注册规则见 `docs/dev/changes/CR-010`、`CR-011`、`CR-014`。
 
 ## 六、数据集说明
