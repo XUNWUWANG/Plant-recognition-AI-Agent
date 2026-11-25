@@ -3,7 +3,7 @@
 用法(需在项目根目录运行):
     python -m retrieval.eval
     python -m retrieval.eval --configs bm25,dense
-    python -m retrieval.eval --out 指标/检索对比表.md --db 指标/eval.db
+    python -m retrieval.eval --out 指标/retrieval/检索对比表.md --db 指标/retrieval/eval.db
     python -m retrieval.eval --limit 50          # 仅用前 N 条(M0 判据)
 """
 
@@ -314,8 +314,8 @@ def main():
     ap.add_argument("--configs", default=",".join(CONFIGS))
     ap.add_argument("--cases", default=None)
     ap.add_argument("--limit", type=int, default=0)
-    ap.add_argument("--out", default=os.path.join("指标", "检索对比表.md"))
-    ap.add_argument("--err", default=os.path.join("指标", "检索错误案例.md"))
+    ap.add_argument("--out", default=os.path.join("指标", "retrieval", "检索对比表.md"))
+    ap.add_argument("--err", default=os.path.join("指标", "retrieval", "检索错误案例.md"))
     ap.add_argument("--db", default=st.EVAL_DB)
     args = ap.parse_args()
 

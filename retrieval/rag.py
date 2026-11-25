@@ -360,6 +360,7 @@ def _rebuild():
             os.remove(path)
             print(f"已删除 {path}")
     _load_chunks(force=True)
+    _ensure_dense()   # 重建向量缓存,确保两个缓存文件都落地
     print(f"重建完成:{len(_chunks)} 条")
 
 

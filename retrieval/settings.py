@@ -11,14 +11,14 @@ from config import BASE_DIR
 EMBED_MODEL = "Qwen/Qwen3-Embedding-0.6B"
 EMBED_FALLBACK = "BAAI/bge-small-zh-v1.5"
 
-# 缓存(CR-005 将迁入 models/cache/)
-EMBED_CACHE = os.path.join(BASE_DIR, "models", "emb_qwen3_0.6b.npz")
-CHUNKS_CACHE = os.path.join(BASE_DIR, "models", "chunks.json")
+# 缓存(可重建,不提交)
+EMBED_CACHE = os.path.join(BASE_DIR, "models", "cache", "emb_qwen3_0.6b.npz")
+CHUNKS_CACHE = os.path.join(BASE_DIR, "models", "cache", "chunks.json")
 
 # 知识库与评测
 KB_DIR = os.path.join(BASE_DIR, "kb")
-EVAL_DIR = os.path.join(BASE_DIR, "data")
-EVAL_DB = os.path.join(BASE_DIR, "指标", "eval.db")
+EVAL_DIR = os.path.join(BASE_DIR, "data", "eval")
+EVAL_DB = os.path.join(BASE_DIR, "指标", "retrieval", "eval.db")
 
 # 检索超参
 TOP_K = 5

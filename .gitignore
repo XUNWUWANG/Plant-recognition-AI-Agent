@@ -8,11 +8,11 @@ __pycache__/
 
 # === 大数据集(体积大,可用 download_images.py 重新采集)===
 data/*
+!data/eval/
 test_set/
 
-# 评测集需随仓库提供
-!data/eval_queries.jsonl
-!data/eval_candidates.jsonl
+# === 可重建缓存(不提交)===
+models/cache/
 
 # === 训练中间产物(仅保留最终 best.pt)===
 models/full.pt

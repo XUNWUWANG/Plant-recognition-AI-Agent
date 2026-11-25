@@ -26,10 +26,10 @@ code/
 ├── scripts/build_eval.py  评测题候选生成(需人工改写)
 ├── tests/              单元测试(chunk 解析、RRF、路由、兼容性)
 ├── kb/                 植物养护知识库(文本,按植物 + 小节分块)
-├── models/             训练好的模型、类别表、chunks 与向量缓存
-├── data/               训练集 / 评测集(eval_queries.jsonl)
+├── models/             训练权重、类别表;cache/ 为可重建的 chunks/向量缓存
+├── data/               训练集;eval/ 为评测集(eval_queries.jsonl)
 ├── docs/               开发契约(dev/)与论文材料(thesis/)
-└── 指标/               对比评测结果、检索对比表、eval.db
+└── 指标/               CV 产物;retrieval/ 为检索评测结果与 eval.db
 ```
 
 ## 二、环境与依赖
@@ -102,7 +102,7 @@ set HF_ENDPOINT=https://hf-mirror.com
 ```
 
 - **离线路线**:选择“本地模型识别”时,识别与建议全程本地,不消耗 API 额度。
-- **评测产物**:`指标/检索对比表.md`、`指标/检索错误案例.md`、`指标/eval.db`。
+- **评测产物**:`指标/retrieval/检索对比表.md`、`指标/retrieval/检索错误案例.md`、`指标/retrieval/eval.db`。
 - **实测(120 题)Recall@5**:naive 0.682 / BM25 0.691 / Dense 0.518 / Hybrid 0.691 / Adaptive 0.927。
 
 ## 六、数据集说明
