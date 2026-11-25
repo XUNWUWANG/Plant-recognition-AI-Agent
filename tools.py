@@ -110,7 +110,7 @@ def plant_advice(plant_name=None, question=None, topk=2):
 
     返回 {content: 建议文本, source: 'kb' | 'generic'}。
     """
-    import rag
+    from retrieval import rag
 
     q = (question or "").strip()
     query = q or (plant_name or "")
@@ -148,7 +148,7 @@ def plant_advice_offline(plant_name=None, question=None, topk=1):
     用于“本地模型识别/纯问答”路线,使该路线真正做到零 API、零额度消耗。
     知识库未命中时返回一句提示,建议改用大模型路线获取更完善建议。
     """
-    import rag
+    from retrieval import rag
 
     q = (question or "").strip()
     query = q or (plant_name or "")

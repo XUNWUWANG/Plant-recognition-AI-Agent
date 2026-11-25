@@ -144,7 +144,7 @@ def _ensure_bm25():
     global _bm25
     _load_chunks()
     if _bm25 is None:
-        import retrievers
+        from . import retrievers
         _bm25 = retrievers.BM25Index(_chunks)
     return _bm25
 
@@ -153,7 +153,7 @@ def _ensure_dense():
     global _dense
     _load_chunks()
     if _dense is None:
-        import retrievers
+        from . import retrievers
         _dense = retrievers.DenseIndex(_chunks)
     return _dense
 
@@ -162,7 +162,7 @@ def _ensure_names():
     global _names, _primary_names, _alias_map, _name_list
     _load_chunks()
     if _names is None:
-        import router
+        from . import router
         _names, _primary_names = router.collect_names(_chunks)
         _alias_map = {}
         for c in _chunks:
@@ -206,7 +206,7 @@ def _fmt(results):
 
 def _search(route, q, topk, plant=None):
     """返回 (ranked, top1_cos)。plant 非空时只在该植物范围内排序。"""
-    import router
+    from . import router
     limit = len(_chunks) if plant else cfg.FUSE_TOP_N
 
     if route == router.ROUTE_BM25:
@@ -231,7 +231,7 @@ def _search(route, q, topk, plant=None):
 
 
 def retrievers_rrf(bm, de, topk):
-    import retrievers
+    from . import retrievers
     return retrievers.rrf_fuse([bm, de], cfg.RRF_K, topk)
 
 
@@ -245,7 +245,7 @@ def _top1_text(ranked):
 
 def _run(query, topk, plant_hint):
     """核心检索流程,返回 (route, retried, ranked, coverage, top1_cos, latency_ms)。"""
-    import router
+    from . import router
 
     q = (query or "").strip() or (plant_hint or "")
     names, primary = _ensure_names()

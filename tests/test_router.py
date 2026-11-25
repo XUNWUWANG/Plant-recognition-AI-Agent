@@ -6,8 +6,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import rag  # noqa: E402
-import router  # noqa: E402
+from retrieval import rag, router  # noqa: E402
 
 
 class TestRouter(unittest.TestCase):

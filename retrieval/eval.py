@@ -1,10 +1,10 @@
 """检索评测:naive / bm25 / dense / hybrid / adaptive 五组对照。
 
-用法:
-    python eval_retrieval.py
-    python eval_retrieval.py --configs bm25,dense
-    python eval_retrieval.py --out 指标/检索对比表.md --db 指标/eval.db
-    python eval_retrieval.py --limit 50          # 仅用前 N 条(M0 判据)
+用法(需在项目根目录运行):
+    python -m retrieval.eval
+    python -m retrieval.eval --configs bm25,dense
+    python -m retrieval.eval --out 指标/检索对比表.md --db 指标/eval.db
+    python -m retrieval.eval --limit 50          # 仅用前 N 条(M0 判据)
 """
 
 import argparse
@@ -17,8 +17,8 @@ import time
 from datetime import datetime
 
 import config as cfg
-import rag
-import retrievers
+
+from . import rag, retrievers
 
 CONFIGS = ["naive", "bm25", "dense", "hybrid", "adaptive"]
 

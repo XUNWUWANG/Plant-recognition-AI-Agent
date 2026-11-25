@@ -3,7 +3,7 @@
 import re
 
 import config as cfg
-from retrievers import tokenize
+from .retrievers import tokenize
 
 ROUTE_BM25, ROUTE_DENSE, ROUTE_HYBRID = "bm25", "dense", "hybrid"
 

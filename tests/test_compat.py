@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import rag  # noqa: E402
+from retrieval import rag  # noqa: E402
 import tools  # noqa: E402
 
 

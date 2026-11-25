@@ -13,7 +13,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import config as cfg  # noqa: E402
-import rag  # noqa: E402
+from retrieval import rag  # noqa: E402
 
 TEMPLATES = {
     "光照": ("{plant}需要多少光照？", "entity"),

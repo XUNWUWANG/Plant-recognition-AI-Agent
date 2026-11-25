@@ -12,12 +12,13 @@
 code/
 ├── config.py           配置(API Key、模型名、路径、检索参数)
 ├── tools.py            工具层:大模型识别 / 本地识别 / 知识库建议
-├── rag.py              知识库检索入口(分块、路由、回退)
-├── retrievers.py       检索器:BM25 / 稠密向量(Qwen3-Embedding)/ RRF 融合
-├── router.py           查询特征路由 + 检索质量回退(CRAG-lite)
 ├── agent.py            编排:识别 → 检索 → 生成,拼装输出
 ├── app.py              Gradio 网页界面(照片 + 问答框)
-├── eval_retrieval.py   5 组检索对照评测(零 API)
+├── retrieval/          检索子系统
+│   ├── rag.py          检索入口(分块、路由、回退)
+│   ├── retrievers.py   BM25 / 稠密向量(Qwen3-Embedding)/ RRF 融合
+│   ├── router.py       查询特征路由 + 检索质量回退(CRAG-lite)
+│   └── eval.py         5 组检索对照评测(零 API)
 ├── train.py            本地模型训练(支持 --mode full|reg|frozen)
 ├── compare.py          双路线对比评测(输出 指标/对比表.md)
 ├── download_images.py  数据集采集脚本(按关键词批量下载并清洗图片)
@@ -26,6 +27,7 @@ code/
 ├── kb/                 植物养护知识库(文本,按植物 + 小节分块)
 ├── models/             训练好的模型、类别表、chunks 与向量缓存
 ├── data/               训练集 / 评测集(eval_queries.jsonl)
+├── docs/               开发契约(dev/)与论文材料(thesis/)
 └── 指标/               对比评测结果、检索对比表、eval.db
 ```
 
@@ -76,13 +78,13 @@ python train.py --mode reg        # 全参数 + 强增强 + 权重衰减
 # 双路线对比评测(生成 指标/对比表.md)
 python compare.py
 
-# 检索评测(5 组对照,无需 API Key)
-python eval_retrieval.py
-python eval_retrieval.py --configs bm25,dense   # 只跑指定组
-python eval_retrieval.py --limit 50             # 仅用前 N 条
+# 检索评测(5 组对照,无需 API Key;需在项目根目录运行)
+python -m retrieval.eval
+python -m retrieval.eval --configs bm25,dense   # 只跑指定组
+python -m retrieval.eval --limit 50             # 仅用前 N 条
 
 # 查看知识库分块统计
-python -m rag --stats
+python -m retrieval.rag --stats
 
 # 单元测试
 python -m unittest discover -s tests
@@ -102,7 +104,7 @@ set HF_ENDPOINT=https://hf-mirror.com
 - **评测产物**:`指标/检索对比表.md`、`指标/检索错误案例.md`、`指标/eval.db`。
 - **实测(120 题)Recall@5**:naive 0.682 / BM25 0.691 / Dense 0.518 / Hybrid 0.691 / Adaptive 0.927。
 
-## 五、数据集说明
+## 六、数据集说明
 
 训练数据集(20 类、共 763 张)体积较大,**未随代码提供**。可用 `download_images.py` 重新采集:
 
@@ -114,12 +116,12 @@ python download_images.py "绿萝" 40     # 关键词 + 张数
 
 > **数据来源说明**:本项目所用植物图片均通过搜索引擎公开图片批量采集,仅用于课程实践与学习研究,版权归原作者所有;若涉及侵权请联系删除。
 
-## 六、模型与结果
+## 七、模型与结果
 
 - `models/best.pt`:最终采用的本地模型(20 类,冻结骨干 MobileNetV3-small),配合 `models/classes.json` 使用;
 - `models/hist_full.json`、`hist_reg.json`、`hist_frozen.json`:三种训练策略的逐轮记录;
 - `指标/对比表.md`:本地模型与大模型在同一测试集上的对比结果。
 
-## 七、许可
+## 八、许可
 
 本项目代码采用 MIT 许可证,详见 [LICENSE](LICENSE)。
